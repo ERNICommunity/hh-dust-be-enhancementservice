@@ -19,7 +19,7 @@ namespace WeatherServiceApp
     {
         public float? Winddirection;
         public float Windspeed;
-        public float Rainamount;
+        public float Pressure;
     }
 
     class Program
@@ -80,17 +80,10 @@ namespace WeatherServiceApp
             JObject json = JObject.Parse(response);
 
             Enhancement Enhancement = new Enhancement();
+            Enhancement.Pressure = json["main"].Value<float>("pressure");
             Enhancement.Windspeed = json["wind"].Value<float>("speed");
-
             // wind direction is not mandatory as some examples showed...
             Enhancement.Winddirection = json["wind"].Value<float?>("deg");
-
-            // no raindata if it wasn't raining.
-            if (json.TryGetValue("rain", out var amount))
-            {
-                // raindata seems to be cumulated over 3 hours. so we divide it by 3 to get one hour
-                Enhancement.Rainamount = amount.Value<float>("3h") / 3;
-            }
 
             return Enhancement;
         }
@@ -98,8 +91,8 @@ namespace WeatherServiceApp
         private static int StoreEnhancementToDb(Enhancement e)
         {
             /*
-                INSERT INTO SensorDataEnhancement (winddirection, windspeed, rainamount)
-                VALUES (e.Winddirection, e.Windspeed, e.Rainamount);
+                INSERT INTO SensorDataEnhancement (winddirection, windspeed, pressure)
+                VALUES (e.Winddirection, e.Windspeed, e.Pressure);
 
                 --> return enhancementid
              */
