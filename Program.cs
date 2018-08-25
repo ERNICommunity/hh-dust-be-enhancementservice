@@ -32,33 +32,42 @@ namespace WeatherServiceApp
             foreach (var item in ToEnhanceList)
             {
                 Enhancement e = GetWeatherEnhancementForCoordinates(item);
+                var IdOfStoredElement = StoreEnhancementToDb(e);
+                UpdateEnhancedData(item.Dataid, IdOfStoredElement);
             }
         }
 
-        static HttpClient Client = new HttpClient();
-
-
-        static List<DataThingyToEnhance> GetDataToEnhanceFromDb()
+        private static void UpdateEnhancedData(int DataId ,int IdOfStoredElement)
         {
+                /*
+                UPDATE SensorData
+                SET enhancementid = IdOfStoredElement
+                WHERE dataid = DataId;
+                */
+        }
 
+        private static HttpClient Client = new HttpClient();
+
+
+        private static List<DataThingyToEnhance> GetDataToEnhanceFromDb()
+        {
             /*
-
                 SELECT data.dataid, sens.longitude, sens.latitude
                 FROM SensorData AS data
                 JOIN Sensor AS sens ON sens.sensorid = data.sensorid
                 WHERE 1=1
                 AND data.enhancementid IS NULL
                 AND data.timestamp > NOW()-60*60; --1hour
-
              */
 
             DataThingyToEnhance x = new DataThingyToEnhance();
             x.Latitude = 47.32423;
             x.Longitude = 8.44;
+            x.Dataid = 333;
             return new List<DataThingyToEnhance>() { x };
         }
 
-        static Enhancement GetWeatherEnhancementForCoordinates(DataThingyToEnhance data)
+        private static Enhancement GetWeatherEnhancementForCoordinates(DataThingyToEnhance data)
         {
             String apikey = "b7315d7fc73fbd756db96bdd85b8b9dc";
 
@@ -72,14 +81,32 @@ namespace WeatherServiceApp
 
             Enhancement Enhancement = new Enhancement();
             Enhancement.Windspeed = json["wind"].Value<float>("speed");
+
+            // wind direction is not mandatory as some examples showed...
             Enhancement.Winddirection = json["wind"].Value<float?>("deg");
 
+            // no raindata if it wasn't raining.
             if (json.TryGetValue("rain", out var amount))
             {
-                Enhancement.Rainamount = amount.Value<float>("3h");
+                // raindata seems to be cumulated over 3 hours. so we divide it by 3 to get one hour
+                Enhancement.Rainamount = amount.Value<float>("3h") / 3;
             }
 
             return Enhancement;
         }
+
+        private static int StoreEnhancementToDb(Enhancement e)
+        {
+            /*
+                INSERT INTO SensorDataEnhancement (winddirection, windspeed, rainamount)
+                VALUES (e.Winddirection, e.Windspeed, e.Rainamount);
+
+                --> return enhancementid
+             */
+             var EnhancementId = 9999;
+
+             return EnhancementId;
+        }
+
     }
 }
